@@ -114,6 +114,7 @@
                 <td>Total</td>
                 <td>Diskon</td>
                 <td>Total Bayar</td>
+                <td>Aksi</td>
             </tr>
         </thead>
         <tbody id="data_transaksi">
@@ -122,7 +123,7 @@
     </table>
 
     <script>
-        const data_transaksi = document.getElementById("data_transaksi")
+      
         const hitungBtn = document.getElementById("hitung");
         let diskon = 0;
         let stokAkhir=0;
@@ -151,14 +152,15 @@
         total_bayar.value = (harga_obat * jumlah_beli) - diskon
         }
 );
-
+  const data_transaksi = document.getElementById("data_transaksi")
     async function loadTransaksi (){
+        data_transaksi.innerHTML = "";
         const resp = await fetch("/service/get_transaksi.php")
         const res = await resp.json()
 
         res.data.map((item, index)=>(
             data_transaksi.innerHTML += `
-                <tr>
+                <tr class="trx"  data-key=${index}>
                 <td>${index + 1}</td>
                 <td>${item.id_transaksi} </td>
                 <td>${item.tgl_transaksi} </td>
@@ -167,9 +169,38 @@
                 <td>${item.total} </td>
                 <td>${item.diskon} </td>
                 <td>${item.total_bayar} </td>
+             <td>   <button class="btn-hapus" data-id="${item.id_transaksi}">Delete</button> </td>
                 </tr>
             `
         ))
+        data_transaksi.addEventListener("click", async (e) => {
+            if (e.target.classList.contains("btn-hapus")) {
+                const id = e.target.getAttribute("data-id");
+                console.log(id)
+                if (!confirm(`Yakin mau hapus transaksi ${id}?`)) return;
+
+                try {
+                    const response = await fetch("/service/delete_transaksi.php", {
+                        method: "DELETE",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({ id_transaksi: id })
+                    });
+
+                    const result = await response.json();
+                    if (result.success) {
+                  e.target.closest(".trx").remove();
+                alert("Data berhasil dihapus");
+                window.location.reload();
+                    } else {
+                        alert("Gagal menghapus data: " + result.message);
+                    }
+                } catch (error) {
+                    console.error("Error deleting transaction:", error);
+                }
+            }
+        });
      }  
 
     loadTransaksi()
